@@ -135,7 +135,8 @@ inline LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS lpExceptionInfo)
         return at_func
 #endif // PCH_H
 
-namespace cereal
+// cv的cereal序列化方法
+namespace cv
 {
     template <class Archive> inline void serialize(Archive& ar, const cv::Rect2i& rect)
     {
@@ -186,4 +187,4 @@ namespace cereal
         mat = cv::imdecode(buf, cv::IMREAD_UNCHANGED);
     }
 
-} // namespace cereal
+} // namespace cv
