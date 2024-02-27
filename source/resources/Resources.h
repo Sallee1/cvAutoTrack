@@ -31,12 +31,8 @@ public:
     // 地图中图片像素与天理坐标系的比例
     const double map_relative_scale = 2.557; // 天理坐标缩放
 
-public:
-    // void get_map_keypoint_cache();
-    bool map_is_embedded();
-
 private:
     bool is_installed = false;
 };
 
-bool load_cache(std::shared_ptr<trackCache::CacheInfo>& cacheInfo);
+bool load_cache(const std::string& cache_file_path, std::shared_ptr<trackCache::CacheInfo>& cacheInfo);

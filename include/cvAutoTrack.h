@@ -14,72 +14,18 @@
     #define CVAUTOTRACK_API
 #endif
 
-#ifdef explicit_link
-    #if defined(_WIN32) || defined(_WIN64) || defined(_WIN128) || defined(__CYGWIN__)
-        #include <Windows.h>
-    #else
-        #include <dlfcn.h>
-    #endif
-
-    #if defined(_WIN32) || defined(_WIN64) || defined(_WIN128) || defined(__CYGWIN__)
-        #define LibraryHandle HMODULE
-        #define cvat_load(path) LoadLibraryA(path)
-    #else
-        #define LibraryHandle void*
-        #define cvat_load(path) dlopen(path, RTLD_LAZY)
-    #endif
-
-    #include <functional>
-    #include <memory>
-    #include <string>
-    // static LibraryHandle cvAutoTrackLibraryHandle = nullptr;
-    // bool LoadLibrary(const std::string &path)
-    // {
-    //     if (cvAutoTrackLibraryHandle != nullptr)
-    //     {
-    //         return true;
-    //     }
-    //     cvAutoTrackLibraryHandle = cvat_load(path.c_str());
-    //     if (cvAutoTrackLibraryHandle == nullptr)
-    //     {
-    //         return false;
-    //     }
-    //     return true;
-    // }
-    // template <typename T>
-    // auto GetFunction(const std::string &name)
-    // {
-    //     return reinterpret_cast<T>(GetProcAddress(get_global_handle(), name.c_str()));
-    // }
-    // #define LoadFunction(name) GetFunction<decltype(&name)>(#name)
-    // #define LoadFunctionEx(name) (decltype(&name))GetProcAddress(get_global_handle(), #name)
-    // template <typename T>
-    // std::shared_ptr<T> GetFunction(const std::string &name)
-    // {
-    //     if (cvAutoTrackLibraryHandle == nullptr)
-    //     {
-    //         return nullptr;
-    //     }
-    // #if defined(_WIN32) || defined(_WIN64) || defined(_WIN128) || defined(__CYGWIN__)
-    //     auto func = GetProcAddress(cvAutoTrackLibraryHandle, name.c_str());
-    // #else
-    //     auto func = dlsym(cvAutoTrackLibraryHandle, name.c_str());
-    // #endif
-    //     if (func == nullptr)
-    //     {
-    //         return nullptr;
-    //     }
-    //     return std::make_shared<T>(reinterpret_cast<T *>(func));
-    // }
-    //
-    // #define LoadFunction(name) GetFunction<decltype(name)>(#name)
-
-#endif // explicit_link
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+// #define StructType(type) struct type; \
+// typedef struct type* type##_ptr;\
+// CVAUTOTRACK_API type##_ptr alloc_##type();\
+// CVAUTOTRACK_API void free_##type(type##_ptr ptr);
+// 
+//     StructType(cvat_string);
+// 
     // string alloc
     struct CVAUTOTRACK_API cvat_string;
     typedef struct cvat_string* cvat_string_ptr;
@@ -236,6 +182,11 @@ extern "C"
     /// @return 是否卸载成功
     bool CVAUTOTRACK_API UnInitResource();
 
+    bool CVAUTOTRACK_API SetCacheConfig(const char* config_file, const char* blocks_dir, const char* config, int config_size);
+
+    bool CVAUTOTRACK_API SetCoreCachePath(const char* path);
+    bool CVAUTOTRACK_API GetCoreCachePath(char* path_buff, int buff_size);
+
     /// @brief 启用循环调用服务
     /// @return 启用成功
     bool CVAUTOTRACK_API StartServer();
@@ -330,39 +281,141 @@ extern "C"
     /// @param scale 缩放比例
     /// @return 设置成功
     bool CVAUTOTRACK_API SetWorldScale(double scale);
-    bool CVAUTOTRACK_API ImportMapBlock(int uuid, const char* image_encode_data, int image_data_size);
-    bool CVAUTOTRACK_API ImportMapBlockData(int uuid, const char* image_data, int image_width, int image_height, int image_channels);
-    bool CVAUTOTRACK_API ImportMapBlockCenter(int uuid, int x, int y);
-    bool CVAUTOTRACK_API ImportMapBlockRelativeCenter(int uuid, int parent_uuid, int x, int y);
-    bool CVAUTOTRACK_API ImportMapBlockCenterScale(int uuid, int x, int y, double scale);
-    bool CVAUTOTRACK_API ImportMapBlockRelativeCenterScale(int uuid, int parent_uuid, int x, int y, double scale);
-    bool CVAUTOTRACK_API GetTransformOfMap(double& x, double& y, double& a, int& mapId);
-    bool CVAUTOTRACK_API GetPositionOfMap(double& x, double& y, int& mapId);
-    bool CVAUTOTRACK_API GetDirection(double& a);
-    bool CVAUTOTRACK_API GetRotation(double& a);
-    bool CVAUTOTRACK_API GetStar(double& x, double& y, bool& isEnd);
-    bool CVAUTOTRACK_API GetStarJson(char* json_buff, int buff_size);
-    bool CVAUTOTRACK_API GetUID(int& uid);
-    bool CVAUTOTRACK_API GetAllInfo(double& x, double& y, int& mapId, double& a, double& r, int& uid);
-    bool CVAUTOTRACK_API GetInfoLoadPicture(const char* path, int& uid, double& x, double& y, double& a);
-    bool CVAUTOTRACK_API GetInfoLoadVideo(const char* path, const char* out_path);
+
+    bool CVAUTOTRACK_API GetTransformOfMap(double &x, double &y, double &a, int &mapId);
+    bool CVAUTOTRACK_API GetPositionOfMap(double &x, double &y, int &mapId);
+    bool CVAUTOTRACK_API GetDirection(double &a);
+    bool CVAUTOTRACK_API GetRotation(double &a);
+    bool CVAUTOTRACK_API GetUID(int &uid);
+    bool CVAUTOTRACK_API GetAllInfo(double &x, double &y, int &mapId, double &a, double &r, int &uid);
     bool CVAUTOTRACK_API DebugCapture();
     bool CVAUTOTRACK_API DebugCapturePath(const char* path);
     int CVAUTOTRACK_API GetLastErr();
-    int CVAUTOTRACK_API GetLastErrMsg(char* msg_buff, int buff_size);
-    int CVAUTOTRACK_API GetLastErrJson(char* json_buff, int buff_size);
-    bool CVAUTOTRACK_API GetMapIsEmbedded();
-    bool CVAUTOTRACK_API GetCompileVersion(char* version_buff, int buff_size);
-    bool CVAUTOTRACK_API GetCompileTime(char* time_buff, int buff_size);
+    int CVAUTOTRACK_API GetLastErrMsg(char *msg_buff, int buff_size);
+    int CVAUTOTRACK_API GetLastErrJson(char *json_buff, int buff_size);
 
-    /// @brief
-    /// @param doc_buff
-    /// @param buff_size
-    /// @return
-    bool CVAUTOTRACK_API GetHelpDoc(char* doc_buff, int buff_size);
+    bool CVAUTOTRACK_API GetCompileVersion(char *version_buff, int buff_size);
+    bool CVAUTOTRACK_API GetCompileTime(char* time_buff, int buff_size);
+    bool CVAUTOTRACK_API GetCoreModulePath(char* path_buff, int buff_size);
 
 #ifdef __cplusplus
 }
 #endif
 
+#ifdef explicit_link
+    #if defined(_WIN32) || defined(_WIN64) || defined(_WIN128) || defined(__CYGWIN__)
+        #include <Windows.h>
+    #else
+        #include <dlfcn.h>
+    #endif
+
+    #if defined(_WIN32) || defined(_WIN64) || defined(_WIN128) || defined(__CYGWIN__)
+        #define LibraryHandle HMODULE
+        #define cvat_load(path) LoadLibraryA(path)
+        #define cvat_free(handle) FreeLibrary(handle)
+        #define get_proc(handle, name) GetProcAddress(handle, name)
+    #else
+        #define LibraryHandle void*
+        #define cvat_load(path) dlopen(path, RTLD_LAZY)
+        #define cvat_free(handle) dlclose(handle)
+        #define get_proc(handle, name) dlsym(handle, name)
+    #endif
+
+    #include <functional>
+    #include <memory>
+    #include <string>
+
+    #define maroc_concatenate(a, b) maroc_concatenate_1(a, b)
+    #define maroc_concatenate_1(a, b) maroc_concatenate_2(a, b)
+    #define maroc_concatenate_2(a, b) a##b
+    #define maroc_expand(x) x
+    #define maroc_for_each_0(pred, ...)
+    #define maroc_for_each_1(pred, n, x, ...) pred(x, 0)
+    #define maroc_for_each_2(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_1(pred, 1, __VA_ARGS__))
+    #define maroc_for_each_3(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_2(pred, 2, __VA_ARGS__))
+    #define maroc_for_each_4(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_3(pred, 3, __VA_ARGS__))
+    #define maroc_for_each_5(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_4(pred, 4, __VA_ARGS__))
+    #define maroc_for_each_6(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_5(pred, 5, __VA_ARGS__))
+    #define maroc_for_each_7(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_6(pred, 6, __VA_ARGS__))
+    #define maroc_for_each_8(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_7(pred, 7, __VA_ARGS__))
+    #define maroc_for_each_9(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_8(pred, 8, __VA_ARGS__))
+    #define maroc_for_each_10(pred, n, x, ...) pred(x, n) maroc_expand(maroc_for_each_9(pred, 9, __VA_ARGS__))
+    #define maroc_args_count(...) maroc_expand(maroc_arg_count_1(0, ##__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+    #define maroc_arg_count_1(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, n, ...) n
+    #define maroc_for_each_(n, pred, ...) maroc_expand(maroc_concatenate(maroc_for_each_, n)(pred, n, __VA_ARGS__))
+    #define maroc_for_each(pred, ...) maroc_expand(maroc_for_each_(maroc_expand(maroc_args_count(__VA_ARGS__)), pred, __VA_ARGS__))
+    #define comma_0()
+    #define comma_1() ,
+    #define comma_2() ,
+    #define comma_3() ,
+    #define comma_4() ,
+    #define comma_5() ,
+    #define comma_6() ,
+    #define comma_7() ,
+    #define comma_8() ,
+    #define comma_9() ,
+
+typedef long long int long_long_int;
+typedef const char* const_char_ptr;
+typedef char* char_ptr;
+typedef bool& bool_ref;
+typedef int& int_ref;
+typedef double& double_ref;
+    #define type_null_
+    #define type_null_bool
+    #define type_null_int
+    #define type_null_double
+    #define type_null_bool_ref
+    #define type_null_int_ref
+    #define type_null_double_ref
+    #define type_null_long_long_int
+    #define type_null_const_char_ptr
+    #define type_null_char_ptr
+    #define only_name(v, n) type_null_##v comma_##n()
+    #define bind_call(name, ...)                                               \
+        name(__VA_ARGS__)                                                      \
+        {                                                                      \
+            auto func = (decltype(&::name))get_proc(lib, #name); \
+            if (func == nullptr)                                               \
+                return false;                                                  \
+            return func(maroc_for_each(only_name, __VA_ARGS__));               \
+        }
+
+struct cvAutoTrack
+{
+    LibraryHandle lib;
+    bool bind_call(InitResource);
+    bool bind_call(UnInitResource);
+    bool bind_call(SetCacheConfig, const_char_ptr config_file, const_char_ptr blocks_dir, const_char_ptr config, int config_size);
+    bool bind_call(SetCoreCachePath, const_char_ptr path);
+    bool bind_call(GetCoreCachePath, char_ptr path_buff, int buff_size);
+    bool bind_call(SetWorldCenter, double x, double y);
+    bool bind_call(SetWorldScale, double scale);
+    bool bind_call(GetTransformOfMap, double_ref x, double_ref y, double_ref a, int_ref mapId);
+    bool bind_call(GetPositionOfMap, double_ref x, double_ref y, int_ref mapId);
+    bool bind_call(GetDirection, double_ref a);
+    bool bind_call(GetRotation, double_ref a);
+    bool bind_call(GetUID, int_ref uid);
+    bool bind_call(GetAllInfo, double_ref x, double_ref y, int_ref mapId, double_ref a, double_ref r, int_ref uid);
+    bool bind_call(DebugCapture);
+    int bind_call(GetLastErr);
+    int bind_call(GetLastErrMsg, char_ptr msg_buff, int buff_size);
+    int bind_call(GetLastErrJson, char_ptr json_buff, int buff_size);
+    bool bind_call(GetCompileVersion, char_ptr version_buff, int buff_size);
+    bool bind_call(GetCompileTime, char_ptr time_buff, int buff_size);
+    bool bind_call(GetCoreModulePath, char_ptr time_buff, int buff_size);
+
+    cvAutoTrack(const std::string& path = "cvAutoTrack.dll")
+    {
+        lib = cvat_load(path.c_str());
+    }
+
+    ~cvAutoTrack()
+    {
+        if (lib != nullptr)
+            cvat_free(lib);
+    }
+};
+
+#endif // explicit_link
 #endif // CVAUTOTRACE_H

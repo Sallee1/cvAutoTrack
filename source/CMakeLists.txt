@@ -1,39 +1,19 @@
-
-set(WITH_DYNAMIC_OPENCV ON CACHE BOOL "link static opencv")
-set(BUILD_CAPTURE_DXGI ON CACHE BOOL "build capture dxgi")
-set(BUILD_SUPPORT_WINRT ON CACHE BOOL "support winrt api")
-set(BUILD_SUPPORT_WINDUMP ON CACHE BOOL "support window dump")
-
-set(WITH_DYNAMIC_OPENCV ON)
-set(BUILD_CAPTURE_DXGI ON)
-
 # opencv
 set(OpenCV_DIR "${ThridPatryDir}/opencv-xfeatures2d-release-static/x64/vc17/staticlib")
-if(WITH_DYNAMIC_OPENCV)
+if(BUILD_DYANMIC_LINK_DEPS)
     set(OpenCV_DIR "${ThridPatryDir}/opencv-xfeatures2d-shared/x64/vc17/lib")
+    set(OpenCV_DIR "${ThridPatryDir}/opencv-cvv-dll/x64/vc17/lib")
 endif()
 find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
-
-
+set(opencv_include_dir ${OpenCV_INCLUDE_DIRS} PARENT_SCOPE)
+set(opencv_version ${OpenCV_VERSION} PARENT_SCOPE)
 
 file(GLOB_RECURSE CppFiles "*.cpp")
-file(GLOB_RECURSE HppFiles "*.h")
+file(GLOB_RECURSE HppFiles "*.h" "*.hpp")
 set(VerRcFile "${CMAKE_CURRENT_SOURCE_DIR}/resource/version.rc")
 set(VerHppFile "${CMAKE_CURRENT_SOURCE_DIR}/resource/version.h")
 set(InfaceHppFile "${IncludeDir}/cvAutoTrack.h")
 
-auto_increment_version_file("resource/version_hash.hash" "resource/version.ver")
-parse_version_file("resource/version.ver")
-get_commit_hash(PROJECT_VERSION_HASH)
-get_git_branch(PROJECT_VERSION_BRANCH)
-set(PROJECT_VERSION_MAJOR ${VERSION_MAJOR})
-set(PROJECT_VERSION_MINOR ${VERSION_MINOR})
-set(PROJECT_VERSION_PATCH ${VERSION_PATCH})
-set(PROJECT_VERSION_BUILD ${VERSION_BUILD})
-
-# 划分为静态库模块
-#auto_subdirectory()
 
 # version.rc
 configure_file("${VerRcFile}.in" "${VerRcFile}")
@@ -70,6 +50,9 @@ set_target_properties(cvAutoTrack PROPERTIES FOLDER "cvAutoTrack")
 set_target_properties(cvAutoTrack PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
         
+# release gen .pdb
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 if(MSVC)
     add_pch_define(cvAutoTrack ${SourceDir}/pch.h ${SourceDir}/pch.cpp)
 
@@ -112,9 +95,14 @@ FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt.git GIT_TA
 FetchContent_MakeAvailable(fmt)
 set_target_properties(fmt PROPERTIES FOLDER "cvAutoTrack/dependencies")
 
+list(APPEND opencv_libs opencv_calib3d opencv_core opencv_features2d opencv_flann opencv_imgcodecs opencv_imgproc opencv_video opencv_videoio opencv_xfeatures2d)
+if(WITCH_OPENCV_CVV)
+    list(APPEND opencv_libs opencv_cvv)
+endif()
+
 target_link_libraries(cvAutoTrack 
 PRIVATE  
-    ${OpenCV_LIBS} 
+    ${opencv_libs}
     cereal::cereal 
     fmt::fmt-header-only 
     d3d11.lib 
@@ -122,8 +110,11 @@ PRIVATE
     dxgi.lib)
 
 # install to release
-if(WITH_DYNAMIC_OPENCV)
-    add_custom_command(TARGET cvAutoTrack POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenCV_CONFIG_PATH}/../bin/opencv_world480$<$<CONFIG:Debug>:d>.dll" "$<TARGET_FILE_DIR:cvAutoTrack>") 
+if(BUILD_DYANMIC_LINK_DEPS)
+    foreach(lib ${opencv_libs})
+        list(APPEND deps_dlls "${lib}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll")
+    endforeach()
+    add_custom_command(TARGET cvAutoTrack POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${deps_dlls} $<TARGET_FILE_DIR:cvAutoTrack> WORKING_DIRECTORY "${OpenCV_CONFIG_PATH}/../bin") 
 endif()
 add_custom_target(copy_version_file ALL COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resource/version.ver" "$<TARGET_FILE_DIR:cvAutoTrack>/version")
 set_target_properties(copy_version_file PROPERTIES FOLDER "scripts")
